@@ -1,0 +1,35 @@
+body {
+  font-family: helvetica;
+  width: 50vw;
+  margin: 0 25vw;
+}
+
+.spread {
+  height: 45vh;
+  padding: 10vh 0 0;
+  display: -webkit-flex;
+  -webkit-flex-flow: row nowrap;
+  -webkit-filter: drop-shadow(0 4em 2em rgba(0, 0, 0, 0.5));
+  -webkit-perspective: 1200;
+}
+.spread .page {
+  width: 50%;
+  -webkit-flex: 1 auto;
+  -webkit-transition: -webkit-transform 0.4s ease-out;
+  background: #eee;
+  padding: 2em;
+}
+.spread .page:nth-child(1) {
+  -webkit-transform-origin: right center;
+  -webkit-transform: rotateY(45deg) translateZ(0);
+  border-right: 1px solid #ccc;
+  border-radius: 0.5em 0 0 0.5em;
+}
+.spread .page:nth-child(2) {
+  -webkit-transform-origin: left center;
+  -webkit-transform: rotateY(-45deg) translateZ(0);
+  border-radius: 0 0.5em 0.5em 0;
+}
+.spread:hover .page {
+  -webkit-transform: rotateY(0) translateZ(0);
+}
