@@ -1,0 +1,3 @@
+[submodule "pointer.js"]
+	path = pointer.js
+	url = git://github.com/borismus/pointer.js.git
