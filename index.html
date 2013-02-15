@@ -4,12 +4,10 @@
     <title></title>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="style.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    
 </head>
 <body>
-    <h1>Drop shadow with CSS Filters</h1>
-    <p>Hover over the pages and observe the drop shadow created with <code>filter: drop-shadow()</code>.</p>
-    <p>You'll need Google <a href="https://www.google.com/intl/en/chrome/browser/canary.html" target="_blank">Chrome Canary</a> with the <em>Experimental WebKit Features</em> flag enabled in <code>chrome://flags</code>.</p>
-    <p>Got a question? Ask me on Twitter <a href="https://twitter.com/razvancaliman" target="_blank">@razvancaliman</a></p>
     <div class="spread">
         <div class="page"></div>
         <div class="page"></div>
@@ -18,7 +16,165 @@
         <div class="page"></div>
         <div class="page"></div>
         <div id="hack"></div>
-    </div>
+    </div> 
+    
+    <script type="text/javascript">
+    
+      var SCALE_THRESHOLD = 0;
+    
+      function PointerPair(p1, p2) {
+        this.p1 = {
+            pageX: p1.pageX,
+            pageY: p1.pageY
+        };
+        this.p2 = {
+            pageX: p2.pageX,
+            pageY: p2.pageY
+        }
+      }
+      
+      /**
+       * Calculate the distance between the two pointers.
+       */
+      PointerPair.prototype.span = function() {
+        var dx = this.p1.pageX - this.p2.pageX;
+        var dy = this.p1.pageY - this.p2.pageY;
+        return Math.sqrt(dx*dx + dy*dy);
+      };
+    
+      /**
+       * Given a reference pair, calculate the scale multiplier difference.
+       */
+      PointerPair.prototype.scaleSince = function(referencePair) {
+        var originalSpan = this.span();
+        var referenceSpan = referencePair.span();
+        if (referenceSpan == 0) return 0;
+        else return originalSpan / referenceSpan;
+      };
+      
+      pointerDown = function(e){
+          e.preventDefault()
+          if (e.touches.length == 2){
+              e.currentTarget.scaleReferencePair = new PointerPair(e.touches[0], e.touches[1]);
+          }
+      }
+      
+      pointerMove = function(e){
+          event.preventDefault();
+          var pointerList = e.touches;
+          // If there are two pointers down, compare to the initial pointer pair.
+          if (pointerList.length == 2 && e.currentTarget.scaleReferencePair) {
+            var pair = new PointerPair(e.touches[0], e.touches[1]);
+                                
+            // Compute the scaling value according to the difference.
+            var scale = pair.scaleSince(e.currentTarget.scaleReferencePair);
+            // If the movement is drastic enough:
+            if (Math.abs(1 - scale) > SCALE_THRESHOLD) {
+              // Create the scale event as a result.
+              var payload = {
+                scale: scale,
+              };
+              
+              createCustomEvent('scale', document, payload)
+            }
+          }
+      }
+      
+      pointerUp = function(e){
+          e.currentTarget.scaleReferencePair = null;
+      }
+      
+      function createCustomEvent(eventName, target, payload) {
+        var event = document.createEvent('Event');
+        event.initEvent(eventName, true, true);
+        for (var k in payload) {
+          event[k] = payload[k];
+        }
+        target.dispatchEvent(event);
+      }
+    
+    last = {}
+    pages = document.querySelectorAll('.page')
+    MAX_SCALE = 1
+    MAX_ANGLE = 45
+    MAX_XPOS = 180
+    MAX_ZPOS = 160   
+    
+    document.addEventListener('touchstart', pointerDown)
+    document.addEventListener('touchstart', manualTranstion)
+    document.addEventListener('touchmove', pointerMove) 
+    document.addEventListener('touchend', pointerUp)
+    document.addEventListener('touchend', autoTransition)
+    document.addEventListener('scale', function(e){
+        var scale = e.scale
 
+        if (scale > MAX_SCALE){
+            return
+        }  
+        
+        var targetAngle = (MAX_ANGLE / MAX_SCALE) * scale
+        var targetXPos = (MAX_XPOS / MAX_SCALE) * scale
+        var targetZPos = (MAX_ZPOS / MAX_SCALE) * scale
+        
+        setPostions(targetAngle, targetXPos, targetZPos)
+    })
+    
+    function manualTranstion(){
+        var cssText = '.spread .page { -webkit-transition-duration: 0s; -webkit-transition-timing-function: linear; }'
+
+        function removeStyle(style){
+            function remove(){
+                style.parentNode.removeChild(style)
+                document.removeEventListener('touchend', remove)
+            }         
+            
+            document.addEventListener('touchend', remove)
+        }               
+        
+        addStylesheet(cssText, removeStyle)
+    }
+    
+    function autoTransition(){
+        // less tansform = less time, more transform = more time to ease in back
+        var time = Math.min(0.4, 1 - last.targetAngle / MAX_ANGLE)
+        var cssText = '.spread .page { -webkit-transition-duration: '+ time +'s; -webkit-transition-timing-function: cubic-bezier(.17,.67,.5,1.5); }'
+
+        function removeStyle(style){
+            function remove(){
+                style.parentNode.removeChild(style)
+                document.removeEventListener('webkitTransitionEnd', remove)
+            }
+            document.addEventListener('webkitTransitionEnd', remove)
+        }
+        
+        addStylesheet(cssText, removeStyle)
+        setPostions(MAX_ANGLE, MAX_XPOS, MAX_ZPOS)
+    }
+    
+    function addStylesheet(cssText, callback){
+        var style = document.createElement('style')
+        style.textContent = cssText
+        document.body.appendChild(style)
+        
+        if (callback){
+            callback.call(this, style)
+        }
+    }
+    
+    function setPostions(angle, xpos, zpos){
+        window.webkitRequestAnimationFrame(function(){
+            pages[0].style['-webkit-transform'] = 'rotateY('+ angle / 4 +'deg) translateZ(-'+ zpos +'px) translateX(-'+ xpos +'px)' 
+            pages[1].style['-webkit-transform'] = 'rotateY('+ angle / 1.8 +'deg) translateZ(-'+ zpos / 3 +'px) translateX(-'+ xpos / 3 +'px)' 
+            pages[2].style['-webkit-transform'] = 'rotateY('+ angle +'deg)' 
+            pages[3].style['-webkit-transform'] = 'rotateY('+ angle * -1 +'deg)' 
+            pages[4].style['-webkit-transform'] = 'rotateY('+ angle / -1.8 +'deg) translateZ(-'+ zpos / 3 +'px) translateX('+ xpos / 3 +'px)' 
+            pages[5].style['-webkit-transform'] = 'rotateY('+ angle / -4 +'deg) translateZ(-'+ zpos +'px) translateX('+ xpos +'px)' 
+            
+            last.targetAngle = angle
+            last.targetXPos = xpos
+            last.targetZPos = zpos
+        })
+    }
+    </script>
 </body>
 </html>
