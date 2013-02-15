@@ -8,7 +8,8 @@
     -webkit-transition: -webkit-filter 0.5s ease-out;
     -webkit-perspective: 900;
     overflow: visible;
-    width: 600px;
+    width: 50vw;
+    max-width: 600px;
     margin: 25vh auto 0;
     
     #hack{
