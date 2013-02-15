@@ -1,3 +1,6 @@
 [submodule "pointer.js"]
 	path = pointer.js
 	url = git://github.com/borismus/pointer.js.git
+[submodule "MagicTouch"]
+	path = MagicTouch
+	url = https://github.com/borismus/MagicTouch.git
